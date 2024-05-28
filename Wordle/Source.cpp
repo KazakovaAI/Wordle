@@ -3,8 +3,10 @@
 #include<cmath>
 #include<string>
 #include"glut.h"
+#include<fstream>
 using std::string;
 using std::vector;
+using std::cout;
 
 void init() {
 	glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -191,9 +193,48 @@ public:
 	static vector<Button> keyboard;
 };
 
+class collection
+{
+public:
+	static vector<string> words4;
+	static vector<string> words5;
+	static vector<string> words6;
+	static int word4_size;
+	static int word5_size;
+	static int word6_size;
+};
+int collection::word4_size = 857;
+int collection::word5_size = 1594;
+int collection::word6_size = 1760;
+vector<string> collection::words4;
+vector<string> collection::words5;
+vector<string> collection::words6;
+
 int main(int argc, char** argv)
 {
 	setlocale(LC_ALL, "rus");
+	std::ifstream in("4 letters.txt");
+	string s;
+	for (int i = 0; i < collection::word4_size; ++i)
+	{
+		in >> s;
+		collection::words4.push_back(s);
+	}
+	in.close();
+	in.open("5 letters.txt");
+	for (int i = 0; i < collection::word5_size; ++i)
+	{
+		in >> s;
+		collection::words5.push_back(s);
+	}
+	in.close();
+	in.open("6 letters.txt");
+	for (int i = 0; i < collection::word6_size; ++i)
+	{
+		in >> s;
+		collection::words6.push_back(s);
+	}
+	in.close();
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(1000, 700);
