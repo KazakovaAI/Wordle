@@ -8,46 +8,6 @@ using std::string;
 using std::vector;
 using std::cout;
 
-void init() {
-	glClearColor(1.0, 1.0, 1.0, 1.0);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(-500, 500, -350, 350);
-	glMatrixMode(GL_MODELVIEW);
-}
-
-void display()
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	glLineWidth(1);
-	glBegin(GL_LINES);
-	for (int i = -1000; i <= 1000; i += 25)
-	{
-		if (i == 0)
-		{
-			glColor3f(0.0, 0.0, 1.0);
-		}
-		else
-		{
-			glColor3f(0.5, 0.5, 0.3);
-		}
-		glVertex2f(i, -350);
-		glVertex2f(i, 350);
-		if (abs(i) <= 350)
-		{
-			glVertex2f(-500, i);
-			glVertex2f(500, i);
-		}
-	}
-	glEnd();
-	glutSwapBuffers();
-}
-
-struct Window {
-	static string current;
-};
-string Window::current = "Main menu";
-
 struct Point
 {
 	double x = 0;
@@ -111,6 +71,21 @@ struct Point
 	}
 };
 
+void init() {
+	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(-500, 500, -350, 350);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+struct Window {
+	static string current;
+	static int size;
+};
+string Window::current = "Main menu";
+int Window::size = 0;
+
 class Button
 {
 private:
@@ -147,8 +122,12 @@ public:
 		glEnd();
 		glColor3f(text_color[0], text_color[1], text_color[2]);
 		int size = strlen(text);
-		float textX = x + 1;
-		float textY = y + 2;
+		float textX = x;
+		if (text == "QUIT")
+		{
+			textX += 45;
+		}
+		float textY = (2 * y + height) / 2 - 9;
 		glRasterPos2f(textX, textY);
 		for (int i = 0; i < size; i++)
 		{
@@ -190,8 +169,40 @@ public:
 	/*static Button rotate;
 	static Button reflex_point;
 	static Button reflex_line;*/
+	static vector<Button> fields;
 	static vector<Button> keyboard;
 };
+Button Buttons::quit;
+Button Buttons::let4;
+Button Buttons::let5;
+Button Buttons::let6;
+vector<Button> Buttons::keyboard(26);
+vector<Button> Buttons::fields(36);
+
+void Button_set()
+{
+	Buttons::quit.change(-70, -250, 50, 140, "QUIT");
+	Buttons::let4.change(-300, 175, 50, 140, "4 letters");
+	Buttons::let5.change(-70, 175, 50, 140, "5 letters");
+	Buttons::let6.change(160, 175, 50, 140, "6 letters");
+	int x = -150;
+	int y = 250;
+	if (Window::size == 4)
+	{
+		x = -100;
+	}
+	else if (Window::size == 5)
+	{
+		x = -125;
+	}
+	for (int i = 0; i < 6; ++i)
+	{
+		for (int j = 0; j < Window::size; ++j)
+		{
+			Buttons::fields[i * Window::size + j].change(x + j * 50, y - i * 50, 50, 50, "G");
+		}
+	}
+}
 
 class collection
 {
@@ -209,6 +220,83 @@ int collection::word6_size = 1760;
 vector<string> collection::words4;
 vector<string> collection::words5;
 vector<string> collection::words6;
+
+void display()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	glLineWidth(1);
+	glBegin(GL_LINES);
+	for (int i = -1000; i <= 1000; i += 25)
+	{
+		if (i == 0)
+		{
+			glColor3f(0.0, 0.0, 1.0);
+		}
+		else
+		{
+			glColor3f(0.5, 0.5, 0.3);
+		}
+		glVertex2f(i, -350);
+		glVertex2f(i, 350);
+		if (abs(i) <= 350)
+		{
+			glVertex2f(-500, i);
+			glVertex2f(500, i);
+		}
+	}
+	glEnd();
+	if (Window::current == "Main menu")
+	{
+		Buttons::quit.drawButton({1.0, 0.0, 0.0});
+		Buttons::let4.drawButton({ 0.0, 1.0, 0.0 });
+		Buttons::let5.drawButton({ 0.0, 1.0, 0.0 });
+		Buttons::let6.drawButton({ 0.0, 1.0, 0.0 });
+	}
+	else if (Window::current == "Play")
+	{
+		for (int i = 0; i < Window::size * 6; ++i)
+		{
+			Buttons::fields[i].drawButton({ 0.0, 0.0, 0.05 });
+		}
+	}
+	glutSwapBuffers();
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	double x0 = x - 500;
+	double y0 = -y + 350;
+	Point p(x0, y0);
+	display();
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		if (Buttons::quit.isPressed(p))
+		{
+			exit(0);
+		}
+		else
+		{
+			if (Buttons::let4.isPressed(p))
+			{
+				Window::current = "Play";
+				Window::size = 4;
+				Button_set();
+			}
+			else if (Buttons::let5.isPressed(p))
+			{
+				Window::current = "Play";
+				Window::size = 5;
+				Button_set();
+			}
+			else if (Buttons::let6.isPressed(p))
+			{
+				Window::current = "Play";
+				Window::size = 6;
+				Button_set();
+			}
+		}
+	}
+}
 
 int main(int argc, char** argv)
 {
@@ -240,8 +328,8 @@ int main(int argc, char** argv)
 	glutInitWindowSize(1000, 700);
 	glutCreateWindow("Wordle");
 	init();
-	//Button_set();
+	Button_set();
 	glutDisplayFunc(display);
-	//glutMouseFunc(mouse);
+	glutMouseFunc(mouse);
 	glutMainLoop();
 }
