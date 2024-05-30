@@ -418,9 +418,9 @@ public:
 	static int word5_size;
 	static int word6_size;
 };
-int collection::word4_size = 857;
-int collection::word5_size = 1594;
-int collection::word6_size = 1760;
+int collection::word4_size = 190;
+int collection::word5_size = 170;
+int collection::word6_size = 178;
 vector<string> collection::words4;
 vector<string> collection::words5;
 vector<string> collection::words6;
@@ -496,17 +496,14 @@ void start_game(int size)
 	if (size == 4)
 	{
 		Window::word = collection::words4[x];
-		Window::word = "game";
 	}
 	else if (size == 5)
 	{
 		Window::word = collection::words5[x];
-		Window::word = "world";
 	}
 	else
 	{
 		Window::word = collection::words6[x];
-		Window::word = "shower";
 	}
 	
 }
@@ -546,7 +543,7 @@ void process_word_input()
 	}
 	if (f)
 	{
-		if (*it == s)
+		if (Window::word == s)
 		{
 			Window::current = "Win";
 		}
