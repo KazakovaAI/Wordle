@@ -75,7 +75,7 @@ struct Point
 };
 
 void init() {
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClearColor(1.0, 0.8, 0.8, 1.0);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(-500, 500, -350, 350);
@@ -156,6 +156,18 @@ public:
 		else if (text == "word")
 		{
 			textY += 2;
+		}
+		else if (text == "4 letters" || text == "5 letters" || text == "6 letters")
+		{
+			textX += 32;
+		}
+		else if (text == "YOU WIN" || text == "YOU LOSE")
+		{
+			textX += 25;
+		}
+		else if (text == "AGAIN")
+		{
+			textX += 38;
 		}
 		glRasterPos2f(textX, textY);
 		for (int i = 0; i < size; i++)
@@ -437,27 +449,6 @@ vector<string> collection::words6;
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	glLineWidth(1);
-	glBegin(GL_LINES);
-	for (int i = -1000; i <= 1000; i += 25)
-	{
-		if (i == 0)
-		{
-			glColor3f(0.0, 0.0, 1.0);
-		}
-		else
-		{
-			glColor3f(0.5, 0.5, 0.3);
-		}
-		glVertex2f(i, -350);
-		glVertex2f(i, 350);
-		if (abs(i) <= 350)
-		{
-			glVertex2f(-500, i);
-			glVertex2f(500, i);
-		}
-	}
-	glEnd();
 	if (Window::current == "Main menu")
 	{
 		Buttons::quit.drawButton({ 1.0, 0.0, 0.0 });
@@ -482,22 +473,54 @@ void display()
 		}
 		if (Window::dop == "Other input")
 		{
-			Buttons::word.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
-			Buttons::other.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
-			Buttons::input.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
+			Buttons::word.drawButton({ 0.8, 0.8, 0.0 }, { 0.0, 0.0, 0.0 });
+			Buttons::other.drawButton({ 0.8, 0.8, 0.0 }, { 0.0, 0.0, 0.0 });
+			Buttons::input.drawButton({ 0.8, 0.8, 0.0 }, { 0.0, 0.0, 0.0 });
 		}
 	}
 	else if (Window::current == "Over")
 	{
 		Buttons::again.drawButton({ 0.0, 1.0, 0.0 });
 		Buttons::quit.drawButton({ 1.0, 0.0, 0.0 });
+		Input::Current_letters[4].clear();
+		for (int i = 0; i < Window::size; ++i)
+		{
+			//Input::Current_letters[4].push_back(Window::word[i]);
+			string s = "";
+			s += Window::word[i] - 32;
+			Buttons::fields[Window::size * 4 + i].change_text(s);
+			Buttons::fields[Window::size * 4 + i].drawButton({ 1.0, 1.0, 0.95 }, { 0.0, 0.0, 0.0 });
+			glLineWidth(1);
+			glBegin(GL_LINES);
+			glColor3f(0.0, 0.0, 0.0);
+			int x = -150;
+			int y = 50;
+			if (Window::size == 4)
+			{
+				x = -100;
+			}
+			else if (Window::size == 5)
+			{
+				x = -125;
+			}
+			glVertex2f(x + i * 50, y);
+			glVertex2f(x + i * 50, y + 50);
+			glVertex2f(x + i * 50, y + 50);
+			glVertex2f(x + i * 50 + 50, y + 50);
+			glVertex2f(x + i * 50 + 50, y + 50);
+			glVertex2f(x + i * 50 + 50, y);
+			glVertex2f(x + i * 50 + 50, y);
+			glVertex2f(x + i * 50, y);
+			glEnd();
+			glFlush();
+		}
 		if (Window::dop == "Win")
 		{
-			Buttons::win.drawButton({1.0, 1.0, 0.0});
+			Buttons::win.drawButton({0.95, 0.95, 0.0}, {0.0, 0.0, 0.0});
 		}
 		else
 		{
-			Buttons::lose.drawButton({ 1.0, 1.0, 0.0 });
+			Buttons::lose.drawButton({ 1.0, 1.0, 0.0 }, {0.0, 0.0, 0.0});
 		}
 	}
 	glutSwapBuffers();
@@ -653,13 +676,16 @@ void reset()
 	{
 		Buttons::fields[i].change_text(" ");
 		Buttons::fields[i].setColor(1.0, 1.0, 0.95);
-		Input::Right[i / Window::size][i % Window::size] = 0;
+		Input::Right[i / 6][i % 6] = 0;
 	}
 	for (int i = 0; i < 6; ++i)
 	{
 		Input::Current_letters[i].clear();
 	}
 	Window::dop = "Empty";
+	Window::size = 0;
+	Window::word = " ";
+	Input::words_inputed = 0;
 }
 
 void mouse(int button, int state, int x, int y)
@@ -733,8 +759,8 @@ void mouse(int button, int state, int x, int y)
 			}
 			else if (Buttons::again.isPressed(p))
 			{
-				/*Window::current = "Main menu";
-				reset();*/
+				Window::current = "Main menu";
+				reset();
 			}
 		}
 	}
