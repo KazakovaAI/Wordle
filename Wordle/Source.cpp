@@ -202,6 +202,9 @@ public:
 	static Button input;
 	static Button other;
 	static Button word;
+	static Button win;
+	static Button lose;
+	static Button again;
 };
 Button Buttons::quit;
 Button Buttons::let4;
@@ -214,6 +217,9 @@ Button Buttons::check;
 Button Buttons::other;
 Button Buttons::word;
 Button Buttons::input;
+Button Buttons::win;
+Button Buttons::lose;
+Button Buttons::again;
 
 class Input {
 public:
@@ -368,6 +374,9 @@ void Button_set()
 	Buttons::word.change(300, 196, 24, 70, "word");
 	Buttons::other.change(300, 220, 20, 70, "other");
 	Buttons::input.change(300, 240, 20, 70, "input");
+	Buttons::again.change(-70, -100, 50, 140, "AGAIN");
+	Buttons::win.change(-70, 170, 50, 140, "YOU WIN");
+	Buttons::lose.change(-70, 170, 50, 140, "YOU LOSE");
 	int x = -150;
 	int y = 250;
 	if (Window::size == 4)
@@ -478,6 +487,19 @@ void display()
 			Buttons::input.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
 		}
 	}
+	else if (Window::current == "Over")
+	{
+		Buttons::again.drawButton({ 0.0, 1.0, 0.0 });
+		Buttons::quit.drawButton({ 1.0, 0.0, 0.0 });
+		if (Window::dop == "Win")
+		{
+			Buttons::win.drawButton({1.0, 1.0, 0.0});
+		}
+		else
+		{
+			Buttons::lose.drawButton({ 1.0, 1.0, 0.0 });
+		}
+	}
 	glutSwapBuffers();
 }
 
@@ -545,14 +567,16 @@ void process_word_input()
 	{
 		if (Window::word == s)
 		{
-			Window::current = "Win";
+			Window::current = "Over";
+			Window::dop = "Win";
 		}
 		else
 		{
 			++Input::words_inputed;
 			if (Input::words_inputed == 6)
 			{
-				Window::current = "Lose";
+				Window::current = "Over";
+				Window::dop = "Lose";
 			}
 			else
 			{
@@ -619,6 +643,25 @@ void process_button(int num)
 	}
 }
 
+void reset()
+{
+	for (int i = 0; i < 26; ++i)
+	{
+		Input::Mark[i] = 0;
+	}
+	for (int i = 0; i < 36; ++i)
+	{
+		Buttons::fields[i].change_text(" ");
+		Buttons::fields[i].setColor(1.0, 1.0, 0.95);
+		Input::Right[i / Window::size][i % Window::size] = 0;
+	}
+	for (int i = 0; i < 6; ++i)
+	{
+		Input::Current_letters[i].clear();
+	}
+	Window::dop = "Empty";
+}
+
 void mouse(int button, int state, int x, int y)
 {
 	double x0 = x - 500;
@@ -680,6 +723,18 @@ void mouse(int button, int state, int x, int y)
 			if (Buttons::backspace.isPressed(p))
 			{
 				process_button(-1);
+			}
+		}
+		else if (Window::current == "Over")
+		{
+			if (Buttons::quit.isPressed(p))
+			{
+				exit(0);
+			}
+			else if (Buttons::again.isPressed(p))
+			{
+				/*Window::current = "Main menu";
+				reset();*/
 			}
 		}
 	}
