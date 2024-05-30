@@ -4,9 +4,12 @@
 #include<string>
 #include"glut.h"
 #include<fstream>
+#include<algorithm>
+#include<set>
 using std::string;
 using std::vector;
 using std::cout;
+using std::set;
 
 struct Point
 {
@@ -82,9 +85,13 @@ void init() {
 struct Window {
 	static string current;
 	static int size;
+	static string word;
+	static string dop;
 };
 string Window::current = "Main menu";
 int Window::size = 0;
+string Window::word = "";
+string Window::dop = "Empty";
 
 class Button
 {
@@ -127,6 +134,7 @@ public:
 		glColor3f(text_color[0], text_color[1], text_color[2]);
 		int size = text.size();
 		float textX = x;
+		float textY = (2 * y + height) / 2 - 9;
 		if (text == "QUIT")
 		{
 			textX += 45;
@@ -135,7 +143,20 @@ public:
 		{
 			textX += 19;
 		}
-		float textY = (2 * y + height) / 2 - 9;
+		else if (text == "<--")
+		{
+			textX += 34;
+			textY += 4;
+		}
+		else if (text == "check")
+		{
+			textX += 20;
+			textY += 4;
+		}
+		else if (text == "word")
+		{
+			textY += 2;
+		}
 		glRasterPos2f(textX, textY);
 		for (int i = 0; i < size; i++)
 		{
@@ -174,11 +195,13 @@ public:
 	static Button let4;
 	static Button let5;
 	static Button let6;
-	/*static Button rotate;
-	static Button reflex_point;
-	static Button reflex_line;*/
 	static vector<Button> fields;
 	static vector<Button> keyboard;
+	static Button backspace;
+	static Button check;
+	static Button input;
+	static Button other;
+	static Button word;
 };
 Button Buttons::quit;
 Button Buttons::let4;
@@ -186,6 +209,11 @@ Button Buttons::let5;
 Button Buttons::let6;
 vector<Button> Buttons::keyboard(26);
 vector<Button> Buttons::fields(36);
+Button Buttons::backspace;
+Button Buttons::check;
+Button Buttons::other;
+Button Buttons::word;
+Button Buttons::input;
 
 class Input {
 public:
@@ -194,12 +222,15 @@ public:
 	static vector<vector<int>> Right;
 	static vector<char> keyboard_place;
 	static vector<int> Mark;
+	static vector<int> Convert;
 };
 vector<vector<char>> Input::Current_letters(6);
-vector<vector<int>> Input::Right(6);
+vector<vector<int>> Input::Right(6, vector<int> (6));
 int Input::words_inputed = 0;
 vector<char> Input::keyboard_place = { 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M' };
 vector<int> Input::Mark(26);
+//vector<int> Input::Convert = { 16, 22, 4, 17, 19, 24, 20, 8, 14, 15, 0, 18, 3, 5, 6, 7, 9, 10, 11, 25, 23, 2, 21, 1, 13, 12 };
+vector<int> Input::Convert = { 10, 23, 21, 12, 2, 13, 14, 15, 7, 16, 17, 18, 25, 24, 8, 9, 0, 3, 11, 4, 6, 22, 1, 20, 5, 9 };
 
 void DrawKeyboard(int num)
 {
@@ -254,25 +285,30 @@ void DrawFields(int num)
 	if (Input::Current_letters[num / Window::size].size() > num % Window::size)
 	{
 		char ch = Input::Current_letters[num / Window::size][num % Window::size];
+		ch -= 32;
 		string s = "";
 		s += ch;
 		Buttons::fields[num].change_text(s);
-		if (Input::Right[num / Window::size][num % Window::size] == 0)
+		if (num / Window::size < Input::words_inputed)
 		{
-			Buttons::fields[num].setColor(1.0, 1.0, 0.95);
-		}
-		else if (Input::Right[num / Window::size][num % Window::size] == 1)
-		{
-			Buttons::fields[num].setColor(1.0, 1.0, 0);
-		}
-		else if (Input::Right[num / Window::size][num % Window::size] == 2)
-		{
-			Buttons::fields[num].setColor(0.0, 1.0, 0);
+			if (Input::Right[num / Window::size][num % Window::size] == 0)
+			{
+				Buttons::fields[num].setColor(0.6, 0.6, 0.6);
+			}
+			else if (Input::Right[num / Window::size][num % Window::size] == 1)
+			{
+				Buttons::fields[num].setColor(1.0, 1.0, 0);
+			}
+			else if (Input::Right[num / Window::size][num % Window::size] == 2)
+			{
+				Buttons::fields[num].setColor(0.0, 1.0, 0);
+			}
 		}
 	}
 	else
 	{
 		Buttons::fields[num].setColor(1.0, 1.0, 0.95);
+		Buttons::fields[num].change_text(" ");
 	}
 	Buttons::fields[num].drawButton(Buttons::fields[num].color, { 0.0, 0.0, 0.0 });
 	glLineWidth(1);
@@ -302,12 +338,36 @@ void DrawFields(int num)
 	glFlush();
 }
 
+void DrawBackspace()
+{
+	Buttons::backspace.setColor(1.0, 1.0, 0.95);
+	Buttons::backspace.drawButton(Buttons::backspace.color, { 0.0, 0.0, 0.0 });
+	glLineWidth(1);
+	glBegin(GL_LINES);
+	glColor3f(0.0, 0.0, 0.0);
+	glVertex2f(348, -120);
+	glVertex2f(348, -120 + 50);
+	glVertex2f(348, -120 + 50);
+	glVertex2f(348 + 100, -120 + 50);
+	glVertex2f(348 + 100, -120 + 50);
+	glVertex2f(348 + 100, -120);
+	glVertex2f(348 + 100, -120);
+	glVertex2f(348, -120);
+	glEnd();
+	glFlush();
+}
+
 void Button_set()
 {
 	Buttons::quit.change(-70, -250, 50, 140, "QUIT");
 	Buttons::let4.change(-300, 175, 50, 140, "4 letters");
 	Buttons::let5.change(-70, 175, 50, 140, "5 letters");
 	Buttons::let6.change(160, 175, 50, 140, "6 letters");
+	Buttons::backspace.change(348, -120, 50, 100, "<--");
+	Buttons::check.change(300, 100, 50, 100, "check");
+	Buttons::word.change(300, 196, 24, 70, "word");
+	Buttons::other.change(300, 220, 20, 70, "other");
+	Buttons::input.change(300, 240, 20, 70, "input");
 	int x = -150;
 	int y = 250;
 	if (Window::size == 4)
@@ -406,8 +466,160 @@ void display()
 		{
 			DrawKeyboard(i);
 		}
+		DrawBackspace();
+		if (Window::dop == "Check")
+		{
+			Buttons::check.drawButton({ 0.0, 0.8, 0.0 }, {0.0, 0.0, 0.0});
+		}
+		if (Window::dop == "Other input")
+		{
+			Buttons::word.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
+			Buttons::other.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
+			Buttons::input.drawButton({ 0.5, 0.5, 0.0 }, { 0.0, 0.0, 0.0 });
+		}
 	}
 	glutSwapBuffers();
+}
+
+void start_game(int size)
+{
+	int p = collection::word4_size;
+	if (size == 5)
+	{
+		p = collection::word5_size;
+	}
+	else if (size == 6)
+	{
+		p = collection::word6_size;
+	}
+	int x = rand() % p;
+	if (size == 4)
+	{
+		Window::word = collection::words4[x];
+		Window::word = "game";
+	}
+	else if (size == 5)
+	{
+		Window::word = collection::words5[x];
+		Window::word = "world";
+	}
+	else
+	{
+		Window::word = collection::words6[x];
+		Window::word = "shower";
+	}
+	
+}
+
+void process_word_input()
+{
+	string s = "";
+	for (int i = 0; i < Window::size; ++i)
+	{
+		s += Input::Current_letters[Input::words_inputed][i];
+	}
+	vector<string>::iterator it;
+	bool f = true;
+	if (Window::size == 4)
+	{
+		it = std::lower_bound(collection::words4.begin(), collection::words4.end(), s);
+		if (it == collection::words4.end() || *it != s)
+		{
+			f = false;
+		}
+	}
+	else if (Window::size == 5)
+	{
+		it = std::lower_bound(collection::words5.begin(), collection::words5.end(), s);
+		if (it == collection::words5.end() || *it != s)
+		{
+			f = false;
+		}
+	}
+	else
+	{
+		it = std::lower_bound(collection::words6.begin(), collection::words6.end(), s);
+		if (it == collection::words6.end() || *it != s)
+		{
+			f = false;
+		}
+	}
+	if (f)
+	{
+		if (*it == s)
+		{
+			Window::current = "Win";
+		}
+		else
+		{
+			++Input::words_inputed;
+			if (Input::words_inputed == 6)
+			{
+				Window::current = "Lose";
+			}
+			else
+			{
+				Window::dop = "Empty";
+				int u = Input::words_inputed - 1;
+				set<char> need;
+				for (int i = 0; i < Window::size; ++i)
+				{
+					need.insert(Window::word[i]);
+				}
+				for (int i = 0; i < Window::size; ++i)
+				{
+					if (s[i] == Window::word[i])
+					{
+						Input::Right[u][i] = 2;
+						Input::Mark[Input::Convert[s[i] - 'a']] = 3;
+					}
+					else if (need.find(s[i]) != need.end())
+					{
+						Input::Right[u][i] = 1;
+						if (Input::Mark[Input::Convert[s[i] - 'a']] < 2)
+						{
+							Input::Mark[Input::Convert[s[i] - 'a']] = 2;
+						}
+					}
+					else
+					{
+						Input::Right[u][i] = 0;
+						if (Input::Mark[Input::Convert[s[i] - 'a']] < 1)
+						{
+							Input::Mark[Input::Convert[s[i] - 'a']] = 1;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		Window::dop = "Other input";
+	}
+}
+
+void process_button(int num)
+{
+	if (num == -1)
+	{
+		if (Input::Current_letters[Input::words_inputed].size() > 0)
+		{
+			Input::Current_letters[Input::words_inputed].pop_back();
+		}
+	}
+	else
+	{
+		Input::Current_letters[Input::words_inputed].push_back(Input::keyboard_place[num] + 32);
+	}
+	if (Input::Current_letters[Input::words_inputed].size() == Window::size)
+	{
+		Window::dop = "Check";
+	}
+	else
+	{
+		Window::dop = "Empty";
+	}
 }
 
 void mouse(int button, int state, int x, int y)
@@ -418,29 +630,59 @@ void mouse(int button, int state, int x, int y)
 	display();
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		if (Buttons::quit.isPressed(p))
+		if (Window::current == "Main menu")
 		{
-			exit(0);
+			if (Buttons::quit.isPressed(p))
+			{
+				exit(0);
+			}
+			else
+			{
+				if (Buttons::let4.isPressed(p))
+				{
+					Window::current = "Play";
+					Window::size = 4;
+					Button_set();
+					start_game(4);
+				}
+				else if (Buttons::let5.isPressed(p))
+				{
+					Window::current = "Play";
+					Window::size = 5;
+					Button_set();
+					start_game(5);
+				}
+				else if (Buttons::let6.isPressed(p))
+				{
+					Window::current = "Play";
+					Window::size = 6;
+					Button_set();
+					start_game(6);
+				}
+			}
 		}
-		else
+		else if (Window::current == "Play")
 		{
-			if (Buttons::let4.isPressed(p))
+			if (Window::dop == "Empty")
 			{
-				Window::current = "Play";
-				Window::size = 4;
-				Button_set();
+				for (int i = 0; i < 26; ++i)
+				{
+					if (Buttons::keyboard[i].isPressed(p))
+					{
+						process_button(i);
+					}
+				}
 			}
-			else if (Buttons::let5.isPressed(p))
+			if (Window::dop == "Check")
 			{
-				Window::current = "Play";
-				Window::size = 5;
-				Button_set();
+				if (Buttons::check.isPressed(p))
+				{
+					process_word_input();
+				}
 			}
-			else if (Buttons::let6.isPressed(p))
+			if (Buttons::backspace.isPressed(p))
 			{
-				Window::current = "Play";
-				Window::size = 6;
-				Button_set();
+				process_button(-1);
 			}
 		}
 	}
@@ -448,6 +690,7 @@ void mouse(int button, int state, int x, int y)
 
 int main(int argc, char** argv)
 {
+	srand(time(0));
 	setlocale(LC_ALL, "rus");
 	std::ifstream in("4 letters.txt");
 	string s;
